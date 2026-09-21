@@ -22,6 +22,13 @@ const COLOR_ESTADO = {
   pendiente: 'var(--danger)',
 };
 
+// Niveles de la verificacion de punta a punta (practica [31]): tres, no dos.
+const COLOR_NIVEL = { OK: 'var(--accent)', ATENCION: '#b26a00', FALLA: 'var(--danger)' };
+
+// Vias del plan de mapeo: la semantica es la unica que aplico una equivalencia propuesta por el
+// LLM (con confianza y motivo): se muestra distinto para que el operador la vea.
+const COLOR_VIA = { directa: 'var(--accent)', semantica: '#1e88e5', plantilla: '#8e24aa', sintesis: 'var(--text-muted)' };
+
 function Badge({ estado }) {
   return (
     <span className="text-xs font-bold" style={{ color: COLOR_ESTADO[estado] || 'var(--text-muted)' }}>
@@ -38,6 +45,9 @@ export default function DesarrolloPage({ esAdmin }) {
   const [subiendo, setSubiendo] = useState(false);
   const [analisis, setAnalisis] = useState(null);
   const [analizando, setAnalizando] = useState('');
+  const [migracion, setMigracion] = useState(null);
+  const [migrando, setMigrando] = useState('');
+  const [limpiando, setLimpiando] = useState('');
   const [respuestas, setRespuestas] = useState({});
   const [mensajeEntrevista, setMensajeEntrevista] = useState('');
 
@@ -107,6 +117,35 @@ export default function DesarrolloPage({ esAdmin }) {
     }
   };
 
+  const migrar = async (archivo) => {
+    setMigrando(archivo);
+    setError('');
+    try {
+      const r = await desarrolloApi.migrar(archivo);
+      setMigracion(r.data);
+      cargar();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setMigrando('');
+    }
+  };
+
+  const limpiarEspejo = async (espejo) => {
+    setLimpiando(espejo);
+    setError('');
+    try {
+      const r = await desarrolloApi.limpiarEspejo(espejo);
+      setMensaje(`✓ ${r.message}: ${r.data.espejo}`);
+      if (migracion && migracion.espejo === espejo) setMigracion(null);
+      cargar();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLimpiando('');
+    }
+  };
+
   const guardarEntrevista = async () => {
     try {
       await empresaApi.actualizar({
@@ -155,13 +194,13 @@ export default function DesarrolloPage({ esAdmin }) {
         )}
       </div>
 
-      {/* Paso 1 — Dump del origen */}
+      {/* Paso 1 — Origen del sistema viejo */}
       <div className="card p-4 mb-4">
-        <h3 className="font-semibold mb-2">1 · Dump del origen</h3>
+        <h3 className="font-semibold mb-2">1 · Origen del sistema viejo</h3>
         <p className="text-sm text-muted mb-3">
-          Un .sql del sistema viejo (mysqldump/Navicat). Los dumps grandes se copian a
-          backend/migration_dump/ en el servidor y se registran por ruta; los chicos (hasta 60 MB)
-          se suben desde aca.
+          Un dump .sql (mysqldump/Navicat) o un schema.prisma del sistema viejo. Los archivos grandes
+          se copian a backend/migration_dump/ en el servidor y se registran por ruta; los chicos
+          (hasta 60 MB) se suben desde aca.
         </p>
         {situacion && situacion.dumps.length > 0 && (
           <table className="w-full text-sm mb-3">
@@ -180,16 +219,21 @@ export default function DesarrolloPage({ esAdmin }) {
                   <td className="py-1">{mb(d.bytes)}</td>
                   <td className="py-1">{new Date(d.modificado).toLocaleString()}</td>
                   <td className="py-1">
-                    <button type="button" className="btn" onClick={() => analizar(d.archivo)} disabled={analizando === d.archivo}>
-                      {analizando === d.archivo ? 'Analizando...' : 'Analizar'}
-                    </button>
+                    <span className="flex gap-2">
+                      <button type="button" className="btn" onClick={() => analizar(d.archivo)} disabled={analizando === d.archivo}>
+                        {analizando === d.archivo ? 'Analizando...' : 'Analizar'}
+                      </button>
+                      <button type="button" className="btn" onClick={() => migrar(d.archivo)} disabled={migrando === d.archivo}>
+                        {migrando === d.archivo ? 'Migrando...' : 'Migrar'}
+                      </button>
+                    </span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-        {situacion && situacion.dumps.length === 0 && <p className="text-sm text-muted mb-3">No hay ningun .sql en migration_dump todavia.</p>}
+        {situacion && situacion.dumps.length === 0 && <p className="text-sm text-muted mb-3">No hay ningun origen (.sql o .prisma) en migration_dump todavia.</p>}
         <div className="flex items-end gap-2 mb-2">
           <div className="flex-1">
             <Input label="Ruta completa en el servidor (ej. C:\\dumps\\bookrm_db.sql)" value={rutaDump} onChange={(e) => setRutaDump(e.target.value)} />
@@ -197,10 +241,10 @@ export default function DesarrolloPage({ esAdmin }) {
           <button type="button" className="btn" onClick={registrarRuta} disabled={!rutaDump.trim()}>Registrar</button>
         </div>
         <label className="block text-sm">
-          <span className="block text-xs uppercase tracking-widest text-muted mb-1">Subir un .sql chico (hasta 60 MB)</span>
+          <span className="block text-xs uppercase tracking-widest text-muted mb-1">Subir un origen chico (hasta 60 MB)</span>
           <input
             type="file"
-            accept=".sql"
+            accept=".sql,.prisma"
             className="input-os"
             disabled={subiendo}
             onChange={(e) => { subirArchivo(e.target.files && e.target.files[0]); e.target.value = ''; }}
@@ -212,50 +256,106 @@ export default function DesarrolloPage({ esAdmin }) {
       {/* Paso 2 — Analisis estructural */}
       <div className="card p-4 mb-4">
         <h3 className="font-semibold mb-2">2 · Analisis estructural</h3>
-        {!analisis && <p className="text-sm text-muted">Elegi un dump de la lista y toca Analizar: se leen sus tablas y se cruzan contra el esquema y las plantillas.</p>}
+        {!analisis && <p className="text-sm text-muted">Elegi un origen de la lista y toca Analizar: se leen sus tablas (o modelos, si es un schema.prisma) y se cruzan contra el esquema del nucleo: por nombre (directa), por SIGNIFICADO con evidencia (semantica, via LLM), por plantilla declarada o a sintesis.</p>}
         {analisis && (
           <div>
             <p className="text-sm mb-2">
               <strong>{analisis.archivo}</strong> ({mb(analisis.bytes)}) · bases detectadas: {analisis.bases.length ? analisis.bases.join(', ') : '(sin CREATE DATABASE/USE)'}
-              {' · '}tablas: {analisis.resumen.tablas} · con plantilla: {analisis.resumen.conPlantilla} · sin plantilla: {analisis.resumen.sinPlantilla}
+              {analisis.sinDatos ? ' · ESTRUCTURA SIN DATOS (schema): se planifica; importar filas requiere el dump o la base viva' : ''}
+              {' · '}tablas: {analisis.resumen.tablas} · directas: {analisis.resumen.directas} · semanticas: {analisis.resumen.semanticas} · con plantilla: {analisis.resumen.conPlantilla} · a sintesis: {analisis.resumen.aSintesis}
               {' · '}inserts aprox: {analisis.resumen.insertosTotales}
             </p>
+            {analisis.avisoSemantico && <p className="text-xs mb-2" style={{ color: '#b26a00' }}>⚠️ {analisis.avisoSemantico}</p>}
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-widest text-muted">
-                  <th className="pb-1">Tabla del dump</th>
-                  <th className="pb-1">Inserts aprox</th>
-                  <th className="pb-1">En esquema destino</th>
-                  <th className="pb-1">Plantilla</th>
+                  <th className="pb-1">Tabla del origen</th>
+                  <th className="pb-1">Via</th>
+                  <th className="pb-1">Destino</th>
+                  <th className="pb-1">Insertos</th>
+                  <th className="pb-1">Detalle</th>
                 </tr>
               </thead>
               <tbody>
-                {analisis.tablas.map((t) => (
-                  <tr key={t.tabla} className="border-t" style={{ borderColor: 'var(--border, #333)' }}>
-                    <td className="py-1 font-mono text-xs">{t.tabla}</td>
-                    <td className="py-1">{t.inserts}</td>
-                    <td className="py-1">{t.enEsquemaDestino === null ? '-' : t.enEsquemaDestino ? 'si' : 'no'}</td>
-                    <td className="py-1">
-                      {t.plantilla ? (
-                        <span>
-                          → <strong>{t.plantilla.destino}</strong> · {t.plantilla.instrumento}{' '}
-                          <Badge estado={t.plantilla.estado} />
-                        </span>
-                      ) : (
-                        <span className="text-muted">sin plantilla: requiere analisis (LLM + READMEs)</span>
-                      )}
+                {analisis.plan.map((p) => (
+                  <tr key={p.tabla} className="border-t" style={{ borderColor: 'var(--border, #333)' }}>
+                    <td className="py-1 font-mono text-xs">{p.tabla}</td>
+                    <td className="py-1 text-xs font-bold" style={{ color: COLOR_VIA[p.via] || 'inherit' }}>
+                      [{p.via}]
+                      {p.via === 'semantica' && p.confianza ? ` ${Math.round(p.confianza * 100)}%` : ''}
                     </td>
+                    <td className="py-1 font-mono text-xs">{p.destino || '-'}</td>
+                    <td className="py-1">{p.inserts}</td>
+                    <td className="py-1 text-xs text-muted">{p.nota}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {analisis.tablas.some((t) => t.plantilla && t.plantilla.nota) && (
-              <div className="mt-2 text-xs text-muted space-y-1">
-                {analisis.tablas.filter((t) => t.plantilla).map((t) => (
-                  <p key={t.tabla}><strong>{t.tabla}:</strong> {t.plantilla.nota}</p>
-                ))}
-              </div>
+            {analisis.resumen.propuestasDebiles > 0 && (
+              <p className="mt-2 text-xs" style={{ color: '#b26a00' }}>
+                {analisis.resumen.propuestasDebiles} tabla(s) con propuesta semantica debil (confianza al 75%): quedan declaradas para revisar y se sintetizan; nada se aplica a ciegas.
+              </p>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Paso 3 — Migracion + verificacion + espejo */}
+      <div className="card p-4 mb-4">
+        <h3 className="font-semibold mb-2">3 · Migracion, verificacion y espejo</h3>
+        {!migracion && <p className="text-sm text-muted">Migrar aplica el plan del analisis a las bases propias (INSERT IGNORE, no pisa datos), sintetiza y semantiza el resto, y al terminar VERIFICA de punta a punta contra la base viva: OK / ATENCION / FALLA. La base espejo del origen se conserva para consulta y se limpia desde aca.</p>}
+        {migracion && (
+          <div>
+            <p className="text-sm mb-2">
+              <strong>{migracion.archivo}</strong> · importacion #{migracion.importacionId} · espejo: {migracion.espejo || '(sin datos: schema)'}
+              {' · '}tablas: {migracion.resumen.tablas} · insertados: {migracion.resumen.insertados} · ignoradas por el motor: {migracion.resumen.omitidos} · sintetizadas: {migracion.resumen.sintetizadas} · semanticas: {migracion.resumen.semanticas} · errores: {migracion.resumen.errores}
+            </p>
+            <p className="text-sm mb-2">
+              Verificacion: <strong style={{ color: COLOR_NIVEL[migracion.verificacion.nivel] }}>[{migracion.verificacion.nivel}]</strong>
+              {migracion.avisoSemantico ? ` · aviso semantico: ${migracion.avisoSemantico}` : ''}
+            </p>
+            <table className="w-full text-sm mb-2">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                  <th className="pb-1">Tabla</th>
+                  <th className="pb-1">Via</th>
+                  <th className="pb-1">Nivel</th>
+                  <th className="pb-1">Origen / presentes</th>
+                  <th className="pb-1">Nota</th>
+                </tr>
+              </thead>
+              <tbody>
+                {migracion.verificacion.detalle.map((v) => (
+                  <tr key={v.tabla} className="border-t" style={{ borderColor: 'var(--border, #333)' }}>
+                    <td className="py-1 font-mono text-xs">{v.tabla}</td>
+                    <td className="py-1 text-xs">{v.via}</td>
+                    <td className="py-1 text-xs font-bold" style={{ color: COLOR_NIVEL[v.nivel] }}>[{v.nivel}]</td>
+                    <td className="py-1 text-xs">{v.origen === null ? '-' : `${v.presentes === null ? '?' : v.presentes}/${v.origen}`}</td>
+                    <td className="py-1 text-xs text-muted">{v.nota}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {migracion.espejo && (
+              <button type="button" className="btn" onClick={() => limpiarEspejo(migracion.espejo)} disabled={limpiando === migracion.espejo}>
+                {limpiando === migracion.espejo ? 'Limpiando...' : `Limpiar base espejo (${migracion.espejo})`}
+              </button>
+            )}
+          </div>
+        )}
+        {situacion && situacion.espejos && situacion.espejos.filter((e) => e.existe).length > 0 && (
+          <div className="mt-3">
+            <p className="text-xs uppercase tracking-widest text-muted mb-1">Bases espejo de los origenes registrados</p>
+            <ul className="text-sm space-y-1">
+              {situacion.espejos.filter((e) => e.existe).map((e) => (
+                <li key={e.espejo} className="flex items-center gap-2">
+                  <span className="font-mono text-xs">{e.espejo}</span> <span className="text-muted text-xs">({e.archivo})</span>
+                  <button type="button" className="btn" onClick={() => limpiarEspejo(e.espejo)} disabled={limpiando === e.espejo}>
+                    {limpiando === e.espejo ? 'Limpiando...' : 'Limpiar'}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

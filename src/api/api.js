@@ -9,13 +9,18 @@ export const authApi = {
   me: () => axiosClient.get('/auth/me'),
 };
 
-// Desarrollo del Core: instalacion asistida (situacion del sistema, dump del origen y analisis
-// estructural contra las plantillas de migracion). Todo lo que no tiene motor se declara.
+// Desarrollo del Core: instalacion asistida (situacion del sistema, origen .sql/.prisma, analisis
+// con plan de mapeo -- directa/semantica/plantilla/sintesis --, migracion con verificacion de
+// punta a punta y limpieza de bases espejo). Todo lo que no tiene motor se declara.
 export const desarrolloApi = {
   situacion: () => axiosClient.get('/desarrollo/situacion'),
   registrarDump: (ruta) => axiosClient.post('/desarrollo/dump', { ruta }),
   subirDump: (nombre, base64) => axiosClient.post('/desarrollo/dump', { nombre, base64 }),
-  analizar: (archivo) => axiosClient.post('/desarrollo/analizar', { archivo }),
+  // El analisis puede incluir el mapeo semantico (1 llamada de LLM): timeout alto.
+  analizar: (archivo) => axiosClient.post('/desarrollo/analizar', { archivo }, { timeout: 180000 }),
+  // La migracion aplica plantillas (hasta 10 min por instrumento) y verifica: timeout alto.
+  migrar: (archivo) => axiosClient.post('/desarrollo/migrar', { archivo }, { timeout: 900000 }),
+  limpiarEspejo: (espejo) => axiosClient.post('/desarrollo/limpiar', { espejo }),
 };
 
 export const catalogoApi = {
