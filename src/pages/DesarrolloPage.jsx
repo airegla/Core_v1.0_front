@@ -48,6 +48,10 @@ export default function DesarrolloPage({ esAdmin }) {
   const [migracion, setMigracion] = useState(null);
   const [migrando, setMigrando] = useState('');
   const [limpiando, setLimpiando] = useState('');
+  const [modulos, setModulos] = useState(null);
+  const [creandoModulo, setCreandoModulo] = useState('');
+  const [resultadoModulo, setResultadoModulo] = useState(null);
+  const [deshaciendo, setDeshaciendo] = useState('');
   const [respuestas, setRespuestas] = useState({});
   const [mensajeEntrevista, setMensajeEntrevista] = useState('');
 
@@ -57,6 +61,10 @@ export default function DesarrolloPage({ esAdmin }) {
       .situacion()
       .then((r) => setSituacion(r.data))
       .catch((e) => setError(e.message));
+    desarrolloApi
+      .modulos()
+      .then((r) => setModulos(r.data))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -143,6 +151,35 @@ export default function DesarrolloPage({ esAdmin }) {
       setError(e.message);
     } finally {
       setLimpiando('');
+    }
+  };
+
+  const crearModulo = async (tabla) => {
+    setCreandoModulo(tabla);
+    setError('');
+    try {
+      const r = await desarrolloApi.crearModulo(tabla);
+      setResultadoModulo(r.data);
+      cargar();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setCreandoModulo('');
+    }
+  };
+
+  const deshacerModulo = async (nombre) => {
+    setDeshaciendo(nombre);
+    setError('');
+    try {
+      const r = await desarrolloApi.deshacerModulo(nombre);
+      setMensaje(`✓ ${r.message}: ${r.data.nombre}`);
+      setResultadoModulo(null);
+      cargar();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setDeshaciendo('');
     }
   };
 
@@ -352,6 +389,96 @@ export default function DesarrolloPage({ esAdmin }) {
                   <span className="font-mono text-xs">{e.espejo}</span> <span className="text-muted text-xs">({e.archivo})</span>
                   <button type="button" className="btn" onClick={() => limpiarEspejo(e.espejo)} disabled={limpiando === e.espejo}>
                     {limpiando === e.espejo ? 'Limpiando...' : 'Limpiar'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Paso 4 — Modulos nuevos (adopcion del legacy + semantica) */}
+      <div className="card p-4 mb-4">
+        <h3 className="font-semibold mb-2">4 · Modulos nuevos (adopcion del legacy + semantica)</h3>
+        <p className="text-sm text-muted mb-3">
+          El desarrollador del Core convierte una sintesis en un modulo COMPLETO por etapas: adopta la
+          tabla legacy tal cual (estructura real y sus datos si hay espejo), inserta su modelo en el
+          schema con migracion versionada, arma backend y panel por las plantillas del core, la
+          semantiza para el buscador y regenera los READMEs. Si el modelo declara ambiguedades
+          sustantivas no aplica nada: queda pendiente de decision.
+        </p>
+        {modulos && modulos.sintesis.length === 0 && <p className="text-sm text-muted">No hay sintesis vigentes: migra un origen primero.</p>}
+        {modulos && modulos.sintesis.length > 0 && (
+          <table className="w-full text-sm mb-3">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                <th className="pb-1">Tabla legacy</th>
+                <th className="pb-1">Origen</th>
+                <th className="pb-1">Columnas</th>
+                <th className="pb-1">Estado</th>
+                <th className="pb-1"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {modulos.sintesis.map((s) => (
+                <tr key={s.tabla} className="border-t" style={{ borderColor: 'var(--border, #333)' }}>
+                  <td className="py-1 font-mono text-xs">{s.tabla}</td>
+                  <td className="py-1 text-xs">{s.archivo || '-'}</td>
+                  <td className="py-1 text-xs">{s.columnas}</td>
+                  <td className="py-1 text-xs">
+                    {s.resuelto ? `modulo: ${s.modulo}` : s.pendienteDecision ? 'pendiente de decision' : s.deshecho ? 'deshecho (reintentable)' : 'sintesis'}
+                  </td>
+                  <td className="py-1">
+                    {!s.resuelto && !s.pendienteDecision && (
+                      <button type="button" className="btn" onClick={() => crearModulo(s.tabla)} disabled={creandoModulo === s.tabla}>
+                        {creandoModulo === s.tabla ? 'Creando...' : 'Crear modulo'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {resultadoModulo && (
+          <div className="mb-3">
+            <p className="text-sm mb-1">
+              <strong>{(resultadoModulo.modulo && resultadoModulo.modulo.titulo) || resultadoModulo.modulo.nombre}</strong>
+              {' · '}estado: <strong style={{ color: resultadoModulo.estado === 'creado' ? 'var(--accent)' : '#b26a00' }}>[{resultadoModulo.estado}]</strong>
+              {resultadoModulo.nota ? ` · ${resultadoModulo.nota}` : ''}
+            </p>
+            {resultadoModulo.ambiguedades && resultadoModulo.ambiguedades.length > 0 && (
+              <p className="text-xs mb-1" style={{ color: '#b26a00' }}>Ambiguedades declaradas (no se aplico nada): {resultadoModulo.ambiguedades.join(' · ')}</p>
+            )}
+            <ul className="text-xs space-y-1 mb-2">
+              {(resultadoModulo.etapas || []).map((e) => (
+                <li key={e.clave}>
+                  <strong>[{e.estado}] {e.clave}</strong> {e.titulo}{e.detalle ? ` — ${e.detalle}` : ''}
+                </li>
+              ))}
+            </ul>
+            {resultadoModulo.verificacion && (
+              <ul className="text-xs space-y-1 mb-2">
+                {resultadoModulo.verificacion.pasos.map((p) => (
+                  <li key={p.paso} style={{ color: COLOR_NIVEL[p.nivel] }}>[{p.nivel}] {p.paso} — {p.detalle}</li>
+                ))}
+              </ul>
+            )}
+            {resultadoModulo.archivos && resultadoModulo.archivos.length > 0 && (
+              <p className="text-xs text-muted font-mono">{resultadoModulo.archivos.join(' · ')}</p>
+            )}
+          </div>
+        )}
+        {modulos && modulos.modulos.length > 0 && (
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted mb-1">Modulos creados</p>
+            <ul className="text-sm space-y-1">
+              {modulos.modulos.map((m) => (
+                <li key={m.nombre} className="flex items-center gap-2 flex-wrap">
+                  <strong>{m.titulo}</strong>{' '}
+                  <span className="text-muted text-xs">({m.tabla} · {m.modelo} · migracion {m.migracion})</span>
+                  <button type="button" className="btn" onClick={() => deshacerModulo(m.nombre)} disabled={deshaciendo === m.nombre}>
+                    {deshaciendo === m.nombre ? 'Deshaciendo...' : 'Deshacer'}
                   </button>
                 </li>
               ))}

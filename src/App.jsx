@@ -49,6 +49,9 @@ import AsistenteVentasBlock from './blocks/AsistenteVentasBlock';
 import ConfigCrmPage from './pages/ConfigCrmPage';
 import PlantillasMailPage from './pages/PlantillasMailPage';
 import ImportadorPage from './pages/ImportadorPage';
+// === MODULOS GENERADOS (nucleo de desarrollo) ===
+// [insertar los imports de las paginas generadas aca, etiquetados [modulo:<nombre>]]
+// === FIN MODULOS GENERADOS ===
 import { authApi, configApi } from './api/api';
 import { activarDebug, useDebugActivo } from './ui/DebugTag';
 import { useAppContext } from './AppContext';
@@ -253,6 +256,9 @@ export default function App() {
           {vista === 'Empresa' && <EmpresaPage />}
           {vista === 'Usuarios' && <UsuariosPage esAdmin={esAdmin} />}
           {vista === 'Desarrollo' && <DesarrolloPage esAdmin={esAdmin} />}
+          {/* === MODULOS GENERADOS (nucleo de desarrollo) === */}
+{/* [insertar el render de los modulos generados aca, etiquetado [modulo:<nombre>]] */}
+          {/* === FIN MODULOS GENERADOS === */}
           {vista === 'Salud' && <SaludPage esAdmin={esAdmin} />}
           {vista === 'Agente' && <AgentePage esAdmin={esAdmin} />}
           {vista === 'Perfiles' && <PerfilesPage esAdmin={esAdmin} />}

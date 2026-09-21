@@ -21,6 +21,11 @@ export const desarrolloApi = {
   // La migracion aplica plantillas (hasta 10 min por instrumento) y verifica: timeout alto.
   migrar: (archivo) => axiosClient.post('/desarrollo/migrar', { archivo }, { timeout: 900000 }),
   limpiarEspejo: (espejo) => axiosClient.post('/desarrollo/limpiar', { espejo }),
+  // Desarrollador: sintesis vigentes + modulos creados; crear un modulo (adopcion del legacy +
+  // semantica, POR ETAPAS: migracion + backend + frontend + build) y deshacerlo.
+  modulos: () => axiosClient.get('/desarrollo/modulos'),
+  crearModulo: (tabla) => axiosClient.post('/desarrollo/modulos', { tabla }, { timeout: 900000 }),
+  deshacerModulo: (nombre) => axiosClient.post('/desarrollo/modulos/deshacer', { nombre }, { timeout: 300000 }),
 };
 
 export const catalogoApi = {

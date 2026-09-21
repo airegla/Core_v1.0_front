@@ -34,6 +34,13 @@ const GRUPOS = [
     ],
   },
   { nombre: 'Sistema', items: ['Config', 'Empresa', 'Usuarios', 'Parametros', 'Importador', 'Desarrollo'] },
+  // === MODULOS GENERADOS (nucleo de desarrollo) ===
+  // El grupo de los modulos creados desde la sintesis (los inserta/borra src/desarrollo del backend
+  // en el front; aca solo viven los items etiquetados [modulo:<nombre>]).
+  { nombre: 'Modulos', submenus: [{ nombre: 'Creados', items: [
+// [insertar modulos generados aca]
+  ] }] },
+  // === FIN MODULOS GENERADOS ===
 ];
 
 // Accesos fijos de la barra movil (los que se usan en el mostrador). El resto vive en el lanzador.
