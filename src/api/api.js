@@ -9,6 +9,15 @@ export const authApi = {
   me: () => axiosClient.get('/auth/me'),
 };
 
+// Desarrollo del Core: instalacion asistida (situacion del sistema, dump del origen y analisis
+// estructural contra las plantillas de migracion). Todo lo que no tiene motor se declara.
+export const desarrolloApi = {
+  situacion: () => axiosClient.get('/desarrollo/situacion'),
+  registrarDump: (ruta) => axiosClient.post('/desarrollo/dump', { ruta }),
+  subirDump: (nombre, base64) => axiosClient.post('/desarrollo/dump', { nombre, base64 }),
+  analizar: (archivo) => axiosClient.post('/desarrollo/analizar', { archivo }),
+};
+
 export const catalogoApi = {
   listar: (params = {}) => axiosClient.get('/catalogo', { params }),
   buscar: (q, limite = 30) => axiosClient.get('/catalogo/buscar', { params: { q, limite } }),
