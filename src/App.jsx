@@ -50,6 +50,7 @@ import ConfigCrmPage from './pages/ConfigCrmPage';
 import PlantillasMailPage from './pages/PlantillasMailPage';
 import ImportadorPage from './pages/ImportadorPage';
 // === MODULOS GENERADOS (nucleo de desarrollo) ===
+import ModuloCommissionSchedulesPage from './pages/ModuloCommissionSchedulesPage'; // [modulo:commission_schedules]
 // [insertar los imports de las paginas generadas aca, etiquetados [modulo:<nombre>]]
 // === FIN MODULOS GENERADOS ===
 import { authApi, configApi } from './api/api';
@@ -257,6 +258,9 @@ export default function App() {
           {vista === 'Usuarios' && <UsuariosPage esAdmin={esAdmin} />}
           {vista === 'Desarrollo' && <DesarrolloPage esAdmin={esAdmin} />}
           {/* === MODULOS GENERADOS (nucleo de desarrollo) === */}
+{/* [modulo:commission_schedules] inicio */}
+          {vista === 'ModuloCommissionSchedules' && <ModuloCommissionSchedulesPage />}
+          {/* [modulo:commission_schedules] fin */}
 {/* [insertar el render de los modulos generados aca, etiquetado [modulo:<nombre>]] */}
           {/* === FIN MODULOS GENERADOS === */}
           {vista === 'Salud' && <SaludPage esAdmin={esAdmin} />}
