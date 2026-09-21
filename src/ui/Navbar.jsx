@@ -38,7 +38,6 @@ const GRUPOS = [
   // El grupo de los modulos creados desde la sintesis (los inserta/borra src/desarrollo del backend
   // en el front; aca solo viven los items etiquetados [modulo:<nombre>]).
   { nombre: 'Modulos', submenus: [{ nombre: 'Creados', items: [
-{ vista: 'ModuloCommissionSchedules', label: 'Horarios de Comisión' }, // [modulo:commission_schedules]
 // [insertar modulos generados aca]
   ] }] },
   // === FIN MODULOS GENERADOS ===
