@@ -1,0 +1,33 @@
+/* ARCHIVO: app.css
+   RUTA: frontend/src/styles/app.css
+   DESCRIPCIÓN: Estilos globales + ajustes mobile. */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+  /* Tablas: scroll horizontal (para los bloques que no usan vista de tarjetas). */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Modales: nunca desbordan la pantalla; scrollea solo el cuerpo del modal. */
+  .modal-content {
+    max-width: calc(100vw - 32px);
+    max-height: 92dvh;
+  }
+}
+
+/* OJO: esta hoja (app.css) NO esta importada en main.jsx — solo se carga styles/globals.css.
+   Cualquier regla escrita aca NO se aplica. Los estilos del buscador semantico F7 viven en
+   globals.css (buscar "Buscador semantico F7"). */
