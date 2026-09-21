@@ -446,6 +446,17 @@ export default function DesarrolloPage({ esAdmin }) {
             </span>
           )}
         </div>
+        {/* Lo que no se creo, con su motivo: un resultado sin motivo deja al operario sin salida. */}
+        {trabajo && !trabajo.activo && trabajo.final && trabajo.final.resultados && trabajo.final.resultados.some((r) => r.estado !== 'creado') && (
+          <ul className="text-xs mb-3 space-y-1">
+            {trabajo.final.resultados.filter((r) => r.estado !== 'creado').map((r) => (
+              <li key={r.tabla}>
+                <strong style={{ color: COLOR_NIVEL[r.estado === 'error' ? 'FALLA' : 'ATENCION'] }}>[{r.estado}]</strong> {r.tabla}
+                {r.motivo ? ` :: ${r.motivo}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
         {trabajo && trabajo.activo && (
           <div className="mb-3">
             <div style={{ height: 6, background: 'var(--border, #333)', borderRadius: 3 }}>
@@ -454,7 +465,7 @@ export default function DesarrolloPage({ esAdmin }) {
             <ul className="text-xs mt-2 space-y-1">
               {trabajo.resultados.slice(-4).map((r) => (
                 <li key={r.tabla}>
-                  [{r.estado}] {r.tabla}{r.titulo ? ` → ${r.titulo}` : ''}{r.ambiguedades && r.ambiguedades.length ? ` (freno: ${String(r.ambiguedades[0]).slice(0, 80)})` : ''}
+                  [{r.estado}] {r.tabla}{r.titulo ? ` → ${r.titulo}` : ''}{r.motivo ? ` :: ${String(r.motivo).slice(0, 160)}` : ''}
                 </li>
               ))}
             </ul>
