@@ -50,6 +50,13 @@ import ConfigCrmPage from './pages/ConfigCrmPage';
 import PlantillasMailPage from './pages/PlantillasMailPage';
 import ImportadorPage from './pages/ImportadorPage';
 // === MODULOS GENERADOS (nucleo de desarrollo) ===
+import ModuloAttendanceRecordsPage from './pages/ModuloAttendanceRecordsPage'; // [modulo:attendance_records]
+import ModuloTeacherSubstitutionsPage from './pages/ModuloTeacherSubstitutionsPage'; // [modulo:teacher_substitutions]
+import ModuloRoomsPage from './pages/ModuloRoomsPage'; // [modulo:rooms]
+import ModuloCoursesPage from './pages/ModuloCoursesPage'; // [modulo:courses]
+import ModuloCommissionsPage from './pages/ModuloCommissionsPage'; // [modulo:commissions]
+import ModuloPriceListsPage from './pages/ModuloPriceListsPage'; // [modulo:price_lists]
+import ModuloPayrollsPage from './pages/ModuloPayrollsPage'; // [modulo:payrolls]
 // [insertar los imports de las paginas generadas aca, etiquetados [modulo:<nombre>]]
 // === FIN MODULOS GENERADOS ===
 import { authApi, configApi } from './api/api';
@@ -257,6 +264,27 @@ export default function App() {
           {vista === 'Usuarios' && <UsuariosPage esAdmin={esAdmin} />}
           {vista === 'Desarrollo' && <DesarrolloPage esAdmin={esAdmin} />}
           {/* === MODULOS GENERADOS (nucleo de desarrollo) === */}
+{/* [modulo:attendance_records] inicio */}
+          {vista === 'ModuloAttendanceRecords' && <ModuloAttendanceRecordsPage />}
+          {/* [modulo:attendance_records] fin */}
+{/* [modulo:teacher_substitutions] inicio */}
+          {vista === 'ModuloTeacherSubstitutions' && <ModuloTeacherSubstitutionsPage />}
+          {/* [modulo:teacher_substitutions] fin */}
+{/* [modulo:rooms] inicio */}
+          {vista === 'ModuloRooms' && <ModuloRoomsPage />}
+          {/* [modulo:rooms] fin */}
+{/* [modulo:courses] inicio */}
+          {vista === 'ModuloCourses' && <ModuloCoursesPage />}
+          {/* [modulo:courses] fin */}
+{/* [modulo:commissions] inicio */}
+          {vista === 'ModuloCommissions' && <ModuloCommissionsPage />}
+          {/* [modulo:commissions] fin */}
+{/* [modulo:price_lists] inicio */}
+          {vista === 'ModuloPriceLists' && <ModuloPriceListsPage />}
+          {/* [modulo:price_lists] fin */}
+{/* [modulo:payrolls] inicio */}
+          {vista === 'ModuloPayrolls' && <ModuloPayrollsPage />}
+          {/* [modulo:payrolls] fin */}
 {/* [insertar el render de los modulos generados aca, etiquetado [modulo:<nombre>]] */}
           {/* === FIN MODULOS GENERADOS === */}
           {vista === 'Salud' && <SaludPage esAdmin={esAdmin} />}

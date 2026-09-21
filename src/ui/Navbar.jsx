@@ -38,6 +38,13 @@ const GRUPOS = [
   // El grupo de los modulos creados desde la sintesis (los inserta/borra src/desarrollo del backend
   // en el front; aca solo viven los items etiquetados [modulo:<nombre>]).
   { nombre: 'Modulos', submenus: [{ nombre: 'Creados', items: [
+{ vista: 'ModuloAttendanceRecords', label: 'Asistencias' }, // [modulo:attendance_records]
+{ vista: 'ModuloTeacherSubstitutions', label: 'Suplencias de Docentes' }, // [modulo:teacher_substitutions]
+{ vista: 'ModuloRooms', label: 'Salas' }, // [modulo:rooms]
+{ vista: 'ModuloCourses', label: 'Cursos' }, // [modulo:courses]
+{ vista: 'ModuloCommissions', label: 'Comisiones' }, // [modulo:commissions]
+{ vista: 'ModuloPriceLists', label: 'Precios' }, // [modulo:price_lists]
+{ vista: 'ModuloPayrolls', label: 'Nominas' }, // [modulo:payrolls]
 // [insertar modulos generados aca]
   ] }] },
   // === FIN MODULOS GENERADOS ===
