@@ -26,6 +26,10 @@ export const desarrolloApi = {
   modulos: () => axiosClient.get('/desarrollo/modulos'),
   crearModulo: (tabla) => axiosClient.post('/desarrollo/modulos', { tabla }, { timeout: 900000 }),
   deshacerModulo: (nombre) => axiosClient.post('/desarrollo/modulos/deshacer', { nombre }, { timeout: 300000 }),
+  // Lote automatico: desarrolla TODAS las sintesis pendientes en background (un trabajo por vez);
+  // el progreso se consulta con trabajo().
+  desarrollarTodo: (archivo = null) => axiosClient.post('/desarrollo/desarrollar', { archivo }, { timeout: 60000 }),
+  trabajo: () => axiosClient.get('/desarrollo/trabajo'),
 };
 
 export const catalogoApi = {

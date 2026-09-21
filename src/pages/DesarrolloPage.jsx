@@ -52,6 +52,7 @@ export default function DesarrolloPage({ esAdmin }) {
   const [creandoModulo, setCreandoModulo] = useState('');
   const [resultadoModulo, setResultadoModulo] = useState(null);
   const [deshaciendo, setDeshaciendo] = useState('');
+  const [trabajo, setTrabajo] = useState(null);
   const [respuestas, setRespuestas] = useState({});
   const [mensajeEntrevista, setMensajeEntrevista] = useState('');
 
@@ -70,6 +71,21 @@ export default function DesarrolloPage({ esAdmin }) {
   useEffect(() => {
     if (esAdmin) cargar();
   }, [esAdmin, cargar]);
+
+  // Progreso del lote automatico: mientras hay un trabajo activo, se consulta cada 4 s.
+  useEffect(() => {
+    if (!trabajo || !trabajo.activo) return undefined;
+    const id = setInterval(() => {
+      desarrolloApi
+        .trabajo()
+        .then((r) => {
+          setTrabajo(r.data);
+          if (r.data && !r.data.activo) cargar();
+        })
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(id);
+  }, [trabajo, cargar]);
 
   if (!esAdmin) {
     return <p className="text-muted">El instalador es solo para administradores.</p>;
@@ -180,6 +196,17 @@ export default function DesarrolloPage({ esAdmin }) {
       setError(e.message);
     } finally {
       setDeshaciendo('');
+    }
+  };
+
+  const desarrollarTodo = async () => {
+    setError('');
+    try {
+      const r = await desarrolloApi.desarrollarTodo(null);
+      setTrabajo(r.data.trabajo || null);
+      if (r.data && r.data.iniciado === false) setMensaje(r.data.motivo || 'Ya hay un desarrollo en curso');
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -408,6 +435,31 @@ export default function DesarrolloPage({ esAdmin }) {
           sustantivas no aplica nada: queda pendiente de decision.
         </p>
         {modulos && modulos.sintesis.length === 0 && <p className="text-sm text-muted">No hay sintesis vigentes: migra un origen primero.</p>}
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
+          <button type="button" className="btn btn-primary" onClick={desarrollarTodo} disabled={Boolean(trabajo && trabajo.activo)}>
+            {trabajo && trabajo.activo ? `Desarrollando ${trabajo.hechos}/${trabajo.total}...` : 'Desarrollar todos los modulos pendientes'}
+          </button>
+          {trabajo && trabajo.activo && trabajo.actual && <span className="text-sm text-muted">ahora: {trabajo.actual}</span>}
+          {trabajo && !trabajo.activo && trabajo.final && (
+            <span className="text-sm">
+              ultimo lote <strong style={{ color: COLOR_NIVEL[trabajo.final.nivel] }}>[{trabajo.final.nivel}]</strong>: {trabajo.final.creados} creados ({trabajo.final.conVista} con vista, {trabajo.final.apoyo} de apoyo) · {trabajo.final.frenos} con freno · {trabajo.final.errores} con error
+            </span>
+          )}
+        </div>
+        {trabajo && trabajo.activo && (
+          <div className="mb-3">
+            <div style={{ height: 6, background: 'var(--border, #333)', borderRadius: 3 }}>
+              <div style={{ height: 6, width: `${trabajo.total ? Math.round((trabajo.hechos / trabajo.total) * 100) : 0}%`, background: 'var(--accent)', borderRadius: 3 }} />
+            </div>
+            <ul className="text-xs mt-2 space-y-1">
+              {trabajo.resultados.slice(-4).map((r) => (
+                <li key={r.tabla}>
+                  [{r.estado}] {r.tabla}{r.titulo ? ` → ${r.titulo}` : ''}{r.ambiguedades && r.ambiguedades.length ? ` (freno: ${String(r.ambiguedades[0]).slice(0, 80)})` : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {modulos && modulos.sintesis.length > 0 && (
           <table className="w-full text-sm mb-3">
             <thead>
@@ -445,6 +497,7 @@ export default function DesarrolloPage({ esAdmin }) {
             <p className="text-sm mb-1">
               <strong>{(resultadoModulo.modulo && resultadoModulo.modulo.titulo) || resultadoModulo.modulo.nombre}</strong>
               {' · '}estado: <strong style={{ color: resultadoModulo.estado === 'creado' ? 'var(--accent)' : '#b26a00' }}>[{resultadoModulo.estado}]</strong>
+              {resultadoModulo.vista && resultadoModulo.vista.propia === false ? ` · tabla de apoyo sin vista propia (${resultadoModulo.vista.motivo || 'pivote/detalle'})` : ''}
               {resultadoModulo.nota ? ` · ${resultadoModulo.nota}` : ''}
             </p>
             {resultadoModulo.ambiguedades && resultadoModulo.ambiguedades.length > 0 && (
@@ -476,7 +529,7 @@ export default function DesarrolloPage({ esAdmin }) {
               {modulos.modulos.map((m) => (
                 <li key={m.nombre} className="flex items-center gap-2 flex-wrap">
                   <strong>{m.titulo}</strong>{' '}
-                  <span className="text-muted text-xs">({m.tabla} · {m.modelo} · migracion {m.migracion})</span>
+                  <span className="text-muted text-xs">({m.tabla} · {m.modelo} · migracion {m.migracion}{m.vista && m.vista.propia === false ? ' · apoyo: sin vista' : ''})</span>
                   <button type="button" className="btn" onClick={() => deshacerModulo(m.nombre)} disabled={deshaciendo === m.nombre}>
                     {deshaciendo === m.nombre ? 'Deshaciendo...' : 'Deshacer'}
                   </button>
